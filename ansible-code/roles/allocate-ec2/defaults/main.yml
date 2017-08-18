@@ -1,0 +1,27 @@
+---
+###
+### Variables (these can be overriden)
+###
+
+## Role default variables for allocate-ec2 
+from_scratch: "False"
+##
+## AWS-specific Varaibles
+## 
+ami_ssh_user: "centos"
+# PUBLISHER: Centos.org (official)
+# NAME: CentOS Linux 7 x86_64 HVM EBS 1704_01
+# URL: https://console.aws.amazon.com/ec2/v2/home?region=us-east-1#Images:visibility=public-images;imageId=ami-46c1b650;sort=name
+ami_id: "ami-46c1b650"
+
+ae2_disk_size: 13
+
+ae2_aws_region: us-east-1
+
+ae2_keypair_name: ansible_keypair
+### NB: This will determine CPU & memory size
+ae2_instance_size: "t2.micro"
+
+# Tags automatically applied to EC2 instances
+ae2_automatic_tags:
+  ae2_deployer: "{{ lookup('env','USER') }}"

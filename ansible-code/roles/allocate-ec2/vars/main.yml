@@ -1,0 +1,7 @@
+---
+###
+### Constants for allocate-ec2
+### 
+
+# Using suffix `01` for stacking groups in the future.
+ae2_security_group_01: "my-ae2-security-group"

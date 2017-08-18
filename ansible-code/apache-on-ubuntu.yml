@@ -1,0 +1,34 @@
+# Play #1 
+- name: "Allocate Apache on Ubuntu group"
+  hosts: localhost
+  connection: local
+  # No need to retreive some info about the local machine
+  gather_facts: False 
+  vars_files:
+    - ./vars/aws.yml
+    - ./vars/ubuntu.yml
+  roles:
+    - role: allocate-ec2
+      # Role variables
+      dynamic_group_name: dynamic-hosts
+      ec2_tags:
+        purpose: demo
+        time: evening
+      server_count: 1
+    
+# Play #2
+- name: "Configuring Apache on Ubuntu group"
+  vars_files:
+    - ./vars/aws.yml
+    - ./vars/ubuntu.yml
+  vars:
+      dynamic_group_name: dynamic-hosts
+  hosts: "{{ dynamic_group_name }}"
+  remote_user: "{{ ami_ssh_user }}"
+  connection: ssh
+  # Retreive some info about the target machine 
+  gather_facts: True
+  become: True
+  roles:
+    - { role: geerlingguy.apache }
+  

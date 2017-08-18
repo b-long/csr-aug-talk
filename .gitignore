@@ -1,0 +1,30 @@
+### Ansible ###
+
+# Server retry files
+**/*.retry
+
+# Roles we're re-using
+ansible-code/roles/* 
+!ansible-code/roles/allocate-ec2/
+
+# Example application files
+software-to-deploy/simple-express-app/node_modules/
+software-to-deploy/simple-flask-app/*.pyc
+
+### Vagrant ###
+.vagrant/
+
+
+### AWS ###
+.aws/
+*.pem
+
+### Docker ###
+docker-branch/
+
+### JetBrains ###
+.idea
+
+.cache/motd.legal-displayed
+
+ubuntu-xenial-16.04-cloudimg-console.log

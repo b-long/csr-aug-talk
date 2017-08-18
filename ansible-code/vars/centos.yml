@@ -1,0 +1,9 @@
+---
+# The allocate-ec2 role & playbooks using it need to know the ssh user. 
+# The user is often 'ec2-user', but may be some other account based on the AMI
+
+# PUBLISHER: Centos.org (official)
+# NAME: CentOS Linux 7 x86_64 HVM EBS 1704_01
+# URL: https://console.aws.amazon.com/ec2/v2/home?region=us-east-1#Images:visibility=public-images;imageId=ami-46c1b650;sort=name
+ami_id: "ami-46c1b650"
+ami_ssh_user: "centos"

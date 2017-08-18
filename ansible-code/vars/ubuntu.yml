@@ -1,0 +1,11 @@
+---
+# The allocate-ec2 role & playbooks using it need to know the ssh user. 
+# The user is often 'ec2-user', but may be some other account based on the AMI
+
+# PUBLISHER: Canonical (official)
+# NAME: Ubuntu, 14.04 LTS, amd64 trusty image build on 2017-07-27
+# URL: https://console.aws.amazon.com/ec2/v2/home?region=us-east-1#Images:visibility=public-images;imageId=ami-841f46ff;sort=name
+# Note: There's an issue with the way the Ansible code in this repo interacts
+#       with Ubuntu 16.  More info: https://stackoverflow.com/q/32429259/320399
+ami_id: "ami-841f46ff"
+ami_ssh_user: "ubuntu"

@@ -1,0 +1,58 @@
+# Play #1
+- name: "Allocate Flask server group"
+  hosts: localhost
+  connection: local
+  # No need to retreive some info about the local machine
+  gather_facts: False
+  vars_files:
+    - ./vars/aws.yml
+    - ./vars/centos.yml
+  vars:
+      dynamic_group_name: dynamic-hosts
+      ec2_tags:
+        purpose: demo
+        time: evening
+      server_count: 1
+  roles:
+    - { role: allocate-ec2 }
+
+# Play #2
+- name: "Configure Flask"
+  vars_files:
+    - ./vars/aws.yml
+    - ./vars/centos.yml
+  vars:
+      dynamic_group_name: dynamic-hosts
+  hosts: "{{ dynamic_group_name }}"
+  remote_user: "{{ ami_ssh_user }}"
+  connection: ssh
+  # Retreive some info about the target machine
+  gather_facts: True
+  become: True
+  tasks:
+    - name: "Install git"
+      yum: name={{ item }} state=present
+      with_items:
+        - git-all
+    - name: "Create application directory"
+      file: path=/home/centos/simple-flask-app state=directory
+    - name: "Perform configuration"
+      shell: |
+        curl "https://bootstrap.pypa.io/get-pip.py" -o "get-pip.py"
+        python get-pip.py
+        pip install Flask
+      args:
+        executable: /bin/bash
+        chdir: "/home/centos/"
+    - name: "Clone the application code"
+      git:
+        repo: 'https://github.com/b-long/simple-flask-app.git'
+        dest: "/home/centos/simple-flask-app"
+    - name: "Install Flask"
+      shell: pip install Flask
+      args:
+        chdir: "/home/centos/simple-flask-app/"
+    - name: "Start the Flask Application"
+      shell: nohup ./run.sh &
+      args:
+        chdir: "/home/centos/simple-flask-app/"

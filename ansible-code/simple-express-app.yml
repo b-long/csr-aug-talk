@@ -1,0 +1,74 @@
+# Play #1
+- name: "Allocate Express server group"
+  hosts: localhost
+  connection: local
+  # No need to retreive some info about the local machine
+  gather_facts: False
+  vars_files:
+    - ./vars/aws.yml
+    - ./vars/centos.yml
+  vars:
+      dynamic_group_name: dynamic-hosts
+      ec2_tags:
+        purpose: demo
+        time: evening
+      server_count: 1
+  roles:
+    - { role: allocate-ec2 }
+
+# Play #2
+- name: "Install NodeJS"
+  vars_files:
+    - ./vars/aws.yml
+    - ./vars/centos.yml
+  vars:
+      dynamic_group_name: dynamic-hosts
+  hosts: "{{ dynamic_group_name }}"
+  remote_user: "{{ ami_ssh_user }}"
+  connection: ssh
+  gather_facts: True
+  become: True
+  roles:
+    - role: geerlingguy.repo-epel
+    - role: geerlingguy.nodejs
+      nodejs_version: "6.x"
+
+# Play #3
+- name: "Configure and start Express"
+  vars_files:
+    - ./vars/aws.yml
+    - ./vars/centos.yml
+  vars:
+      dynamic_group_name: dynamic-hosts
+  hosts: "{{ dynamic_group_name }}"
+  remote_user: "{{ ami_ssh_user }}"
+  connection: ssh
+  gather_facts: True
+  become: True
+  tasks:
+    - name: "Install git"
+      yum: name={{ item }} state=present
+      with_items:
+        - git-all
+    - name: "Create application directory"
+      file: path=/home/centos/simple-express-app state=directory        
+    - name: "Clone the simple Express (NodeJS) application"
+      git:
+        repo: 'https://github.com/b-long/simple-express-app.git'
+        dest: "/home/centos/simple-express-app"
+    - name: "Install dependencies"
+      shell: npm install
+      args:
+        chdir: "/home/centos/simple-express-app/"
+
+    - name: "Install forever (to run Node.js app)."
+      npm: name=forever global=yes state=present
+    
+    - name: "Check list of Node.js apps running."
+      command: forever list
+      register: forever_list
+      changed_when: false
+
+    - name: "Start example Node.js app."
+      command: PORT="80" forever start /home/centos/simple-express-app/hello.js
+      when: "forever_list.stdout.find('/home/centos/simple-express-app/hello.js') == -1"

@@ -1,0 +1,36 @@
+
+  - name: "Establish the EC2 keypair"
+    ec2_key:
+        name: "{{ ae2_keypair_name }}"
+        region: "{{ ae2_aws_region }}"
+    register: ec2_key
+
+  - name: "Save private key"
+    copy: content="{{ ec2_key.key.private_key }}" dest="./{{ ae2_keypair_name }}.pem" mode=0600
+    when: ec2_key.changed
+
+  - name: "Create or update EC2 Security Group(s)"
+    ec2_group:
+      region: "{{ ae2_aws_region }}"
+      name: "{{ ae2_security_group_01 }}"
+      description: "Security group for Ansible hosts"
+      rules:
+        # Allow TCP access from Anywhere
+        - proto: tcp
+          from_port: 0
+          to_port: 65535
+          cidr_ip: 0.0.0.0/0
+        # Allow UDP access from Anywhere
+        - proto: udp
+          from_port: 0
+          to_port: 65535
+          cidr_ip: 0.0.0.0/0
+
+        # Allow ping from anywhere
+        - proto: icmp
+          from_port: -1 # icmp type, -1 = any type
+          to_port:  -1 # icmp subtype, -1 = any subtype
+          cidr_ip: 0.0.0.0/0
+      rules_egress:
+        - proto: all
+          cidr_ip: 0.0.0.0/0

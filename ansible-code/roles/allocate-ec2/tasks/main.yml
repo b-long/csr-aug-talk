@@ -1,0 +1,64 @@
+---
+  - debug:
+      msg: "Allocating host group '{{ dynamic_group_name }}'"
+    failed_when: dynamic_group_name is not defined
+
+  - debug:
+      msg: "Allocating from scratch? '{{ from_scratch }}'"
+    failed_when: from_scratch is not defined
+
+  - debug:
+      msg: "AWS instance filtering and tagging with '{{ ec2_tags }}'"
+    failed_when: ec2_tags is not defined
+
+  # Create or update EC2 Security Group(s)
+  - include: security-group.yml
+
+  - name: Gather EC2 facts
+    ec2_remote_facts:
+      region: "{{ ae2_aws_region }}"
+    register: ec2_facts
+
+  - debug:
+      msg: "Terminating servers with tags: '{{ ec2_tags | combine(ae2_automatic_tags) }}'"
+    when: from_scratch == "True"
+
+  # (-) is used to strip white space, but seems to also effect filtering
+  # http://jinja.pocoo.org/docs/dev/templates/#whitespace-control
+  #
+  # NOTE: In this filtering model, all tags must match (including the EC2
+  # instance Name).  A better approach might be this one:
+  #   https://github.com/pgporada/learning-ansible-filters-and-ec2-tags/blob/d64993f0a733a93bacc646cd133df422e3cfd7fc/playbook.yml#L7-L13
+  - name: "Filter EC2 instances"
+    set_fact:
+      ec2_instances_filtered: >
+        {%- set instances = [] -%}
+        {%- set merged_dictionary = ec2_tags | combine(ae2_automatic_tags) -%}
+        {%- for item in ec2_facts.instances -%}
+          {%- if (item.state == 'running' and item.tags == merged_dictionary) -%}
+            {{ instances.append(item) }}
+          {%- endif -%}
+        {%- endfor -%}
+        {{ instances }}
+
+  - debug:
+      msg: "Terminating servers: '{{ ec2_instances_filtered }}'"
+    when: from_scratch == "True"
+
+  - name: "Add all existing servers to host group '{{ dynamic_group_name }}'"
+    add_host:
+      hostname: "{{ item.public_ip_address }}"
+      groups: "{{ dynamic_group_name }}"
+      remote_user: "{{ ami_ssh_user }}"
+    with_items: "{{ ec2_instances_filtered }}"
+    when: from_scratch == "False"
+
+  - name: "Print information regarding starting from scratch"
+    debug:
+      msg: "from_scratch == \"True\".  Terminating instances and provisioning new servers."
+    when: from_scratch == "True"
+
+  # Note: 'new-server-tasks' also performs termination and depends on the
+  # variable 'ec2_instances_filtered' as defined above.
+  - include: new-server-tasks.yml
+    when: from_scratch == "True"

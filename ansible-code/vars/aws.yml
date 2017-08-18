@@ -1,0 +1,11 @@
+---
+ae2_aws_region: "us-east-1"
+
+# We have to name the key we're going to use
+ae2_keypair_name: "my_ansible_rsa_key"
+# This key will be saved to the local environment by the allocate-ec2 role
+# and then we'll use it when connecting to our servers
+ansible_ssh_private_key_file: "./{{ ae2_keypair_name }}.pem"
+
+# Controls whether or not machines are re-used
+from_scratch: "True"

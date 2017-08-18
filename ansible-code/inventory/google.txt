@@ -1,0 +1,9 @@
+# Demonstration purposes only, recall that
+# we can't SSH to google
+[all]
+google.com
+
+# Brackets denote something that Ansible calls
+# a host group 
+# [other-possibilities]
+# subdomain.example.com

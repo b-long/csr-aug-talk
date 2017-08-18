@@ -1,0 +1,54 @@
+---
+  - debug:
+      msg: "dynamic_group_name is required"
+    failed_when: dynamic_group_name is not defined
+
+  - debug:
+      msg: "ec2_tags is required"
+    failed_when: ec2_tags is not defined
+
+  - debug:
+      msg: "ec2_instances_filtered is required"
+    failed_when: ec2_instances_filtered is not defined
+
+  - name: Terminate EC2 server
+    ec2:
+      region: "{{ ae2_aws_region }}"
+      instance_ids: "{{ item.id }}"
+      state: 'absent'
+    with_items: "{{ ec2_instances_filtered }}"
+    when: from_scratch == "True"
+
+  - name: "Provision the instance(s) for host group '{{ dynamic_group_name }}'"
+    ec2:
+      # Keypair is based on the name of it stored in AWS
+      key_name: "{{ ae2_keypair_name }}"
+      instance_type: "{{ae2_instance_size}}"
+      group:
+         - "{{ ae2_security_group_01 }}"
+      image: "{{ ami_id }}"
+      region: "{{ ae2_aws_region }}"
+      wait: True
+      count: "{{ server_count }}"
+      instance_tags: "{{ ec2_tags |combine(ae2_automatic_tags) }}"
+      volumes:
+        - device_name: /dev/sda1
+          volume_type: gp2
+          volume_size: "{{ ae2_disk_size }}"
+    register: ec2
+    when: from_scratch == "True"
+
+  - name: "Add newly created instances to host group '{{ dynamic_group_name }}'"
+    add_host: hostname={{ item.public_dns_name }} groups={{ dynamic_group_name }}
+    with_items: "{{ ec2.instances }}"
+    when: from_scratch == "True"
+
+  - name: "Wait for '{{ dynamic_group_name }}' hosts to boot by checking the ssh port"
+    wait_for: host={{item.public_dns_name}} port=22 delay=60 timeout=320 state=started
+    with_items: "{{ ec2.instances }}"
+    when: from_scratch == "True"
+
+  # Inspired by https://stackoverflow.com/q/40615981/320399
+  - name: Breathing room (ensuring ssh is ready)
+    pause: seconds=0
+    when: from_scratch == "True"
